@@ -288,25 +288,34 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
     };
 
     return (
-        <div className="relative w-full h-screen bg-black">
+        <div className="relative w-full h-[calc(100vh-4rem)] bg-black rounded-lg overflow-hidden border border-border shadow-lg">
             <div ref={containerRef} className="w-full h-full" />
 
             {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white z-50">
-                    <div className="text-center">
-                        <div className="text-2xl mb-2">Loading...</div>
-                        <div className="text-sm">{Math.round(progress)}%</div>
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80 text-foreground z-50 backdrop-blur-sm">
+                    <div className="text-center space-y-4">
+                        <div className="text-2xl font-bold">Loading 3D Scene...</div>
+                        <div className="w-64 h-2 bg-secondary rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-primary transition-all duration-300 ease-out"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+                        <div className="text-sm text-muted-foreground">{Math.round(progress)}%</div>
                     </div>
                 </div>
             )}
 
             {currentPoint && (
-                <div className="absolute top-4 left-4 text-white bg-black bg-opacity-50 p-2 rounded z-10">
-                    <h2 className="text-lg font-bold">{currentPoint.label}</h2>
+                <div className="absolute top-4 left-4 text-foreground bg-background/80 backdrop-blur-md border border-border p-3 rounded-lg z-10 shadow-lg">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-primary"></span>
+                        {currentPoint.label}
+                    </h2>
                 </div>
             )}
 
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm opacity-70 pointer-events-none">
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white/70 text-sm bg-black/40 px-4 py-2 rounded-full backdrop-blur-sm pointer-events-none border border-white/10">
                 Click and drag to look around. Click markers to move.
             </div>
         </div>
