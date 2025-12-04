@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>여의도 63스퀘어 - 분석 뷰어</title>
+    <link rel="stylesheet" href="../../../assets/css/project-layout.css">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RYLYY4BYT4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RYLYY4BYT4');
+    </script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav id="project-sidebar">
+        <div class="sidebar-header">
+            여의도 63스퀘어
+        </div>
+        <ul class="sidebar-menu">
+            <li class="menu-item active" 
+                data-src="마감레벨대비 바닥 분석/마감레벨대비 바닥 분석.html" 
+                data-title="마감레벨대비 바닥 분석"
+                data-type="static">
+                <span>📉</span> 마감레벨대비 바닥 분석
+            </li>
+            <li class="menu-item" 
+                data-src="../../../viewer.html" 
+                data-title="현장 파노라마뷰"
+                data-type="static">
+                <span>📷</span> 현장 파노라마뷰
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="btn-back" onclick="location.href='../../../index.html'">
+                ← 메인으로 돌아가기
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main id="main-content">
+        <header class="content-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="mobile-menu-toggle" id="mobile-toggle">☰</button>
+                <div class="page-title" id="page-title">분석 뷰어</div>
+            </div>
+            <div style="font-size: 0.9rem; color: #888;">HJ's Tech Space</div>
+        </header>
+
+        <div class="iframe-container">
+            <div id="custom-controls"></div>
+            <iframe id="content-frame" src=""></iframe>
+        </div>
+    </main>
+
+    <script src="../../../assets/js/project-layout.js"></script>
+</body>
+</html>

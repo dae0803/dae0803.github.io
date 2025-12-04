@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RYLYY4BYT4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RYLYY4BYT4');
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Panorama Viewer</title>
+    <link rel="stylesheet" href="assets/css/viewer.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "@tweenjs/tween.js": "https://unpkg.com/@tweenjs/tween.js@23.1.1/dist/tween.esm.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="loading">Loading...</div>
+    
+    <!-- 조준점 (Crosshair) -->
+    <div id="crosshair"></div>
+    
+                </ul>
+                <hr>
+
+                <!-- 춘천 프리미엄빌리지 -->
+                <h3>춘천 프리미엄빌리지</h3>
+                <ul class="menu-list">
+                    <li><a href="#" onclick="alert('파노라마 데이터 준비 중')">현장 파노라마뷰 (준비중)</a></li>
+                    <li><a href="projects/춘천 프리미엄빌리지/index.html">3D 스캔 분석 통합 뷰어</a></li>
+                </ul>
+                <hr>
+
+                <!-- 송도 잭니클라우스 -->
+                <h3>송도 잭니클라우스</h3>
+                <ul class="menu-list">
+                    <li><a href="#" onclick="alert('데이터 준비 중')">준비 중</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 사이트맵 -->
+        <div id="minimap-container">
+            <div id="minimap-content">
+                <!-- 도면 이미지가 배경으로 들어갈 예정 -->
+                <canvas id="minimap-canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 툴바 -->
+        <div id="toolbar">
+            <div id="admin-controls" style="color: white; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px; font-size: 12px;">
+                [관리자] 파노라마 회전: [ / ] (Shift: 미세조정) <br>
+                맵 조정: 방향키(이동), +/- (크기) <br>
+                S (저장), M (파노라마 토글)
+            </div>
+            <button id="btn-measure" title="거리 측정">📏 측정</button>
+            <div id="measure-result">거리: 0.00 m</div>
+        </div>
+    </div>
+
+    <!-- 데이터 로드 -->
+    <script src="assets/js/data.js"></script>
+    <!-- 메인 앱 로직 -->
+    <script type="module" src="assets/js/viewer.js"></script>
+</body>
+</html>

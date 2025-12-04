@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google-adsense-account" content="ca-pub-1404130594250508">
+    <title>메무작 시뮬레이션</title>
+    <meta name="description" content="메이플 무기 강화시뮬">
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-WSJ7B4BX45"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-WSJ7B4BX45');
+    </script>
+    
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1404130594250508"
+         crossorigin="anonymous"></script>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+                Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        /* 다크 파스텔 그라디언트 */
+        .gradient-bg {
+            background: linear-gradient(135deg, #4a5568 0%, #070816 100%);
+        }
+        
+        #log-container p {
+            margin-bottom: 2px;
+            border-bottom: 1px solid #4a5568;
+            padding-bottom: 2px;
+        }
+        #log-container p:last-child {
+            border-bottom: none;
+        }
+        .log-cost { color: #91792b; font-weight: 600; }
+        .log-system { color: #384b61; }
+        .log-success { color: #447a58; font-weight: 600; }
+        .log-fail { color: #6d4646; }
+        .log-weapon-500 { color: #b8a54d; }
+        .log-weapon-1500 { color: #3f5c4e; }
+        .log-weapon-3000 { color: #635f77; }
+        .log-header {
+            color: #ffffff;
+            background-color: #445e7a;
+            padding: 5px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        /* 무기 카드 애니메이션 */
+        .weapon-card {
+            transition: all 0.3s ease;
+        }
+        .weapon-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .weapon-card[disabled] {
+            opacity: 0.6;
+            background-color: #4b5563;
+        }
+        
+        /* 버튼 호버 효과 */
+        button {
+            transition: all 0.2s ease;
+        }
+        
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+        
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        
+        /* 스크롤바 스타일 */
+        #log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #log-container::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        
+        #log-container::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        
+        #log-container::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        
+        /* AdSense 컨테이너 */
+        .ad-container {
+            margin: 20px 0;
+            text-align: center;
+            min-height: 90px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+    <!-- Header with Gradient -->
+    <header class="gradient-bg text-white shadow-lg mb-8">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-center mb-2">메무 시뮬레이터</h1>
+            <p class="text-sm sm:text-base text-center text-gray-100">상점에서 무기를 구매하고 강화하거나 업글해 보세요</p>
+            
+            <!-- 무기 기댓값 표 -->
+            <div class="mt-6 overflow-x-auto">
+                <table class="w-full text-xs sm:text-sm text-center border-collapse">
+                    <thead>
+                        <tr class="bg-gray-700 bg-opacity-50">
+                            <th class="border border-gray-500 px-2 py-2">무기</th>
+                            <th class="border border-gray-500 px-2 py-2">가격</th>
+                            <th class="border border-gray-500 px-2 py-2">6강+ 기댓값<br><span class="text-xs text-gray-300">(2실패 시 버림)</span></th>
+                            <th class="border border-gray-500 px-2 py-2">7강 기댓값<br><span class="text-xs text-gray-300">(1실패 시 버림)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-gray-800 bg-opacity-30">
+                            <td class="border border-gray-500 px-2 py-2"><i class="fas fa-staff-snake text-yellow-400"></i> 35제 메무</td>
+                            <td class="border border-gray-500 px-2 py-2">500</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-yellow-300">약 3,090 단풍</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-yellow-300">약 9,787 단풍</td>
+                        </tr>
+                        <tr class="bg-gray-800 bg-opacity-20">
+                            <td class="border border-gray-500 px-2 py-2"><i class="fas fa-wand-magic-sparkles text-green-400"></i> 43제 메무</td>
+                            <td class="border border-gray-500 px-2 py-2">1,500</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-green-300">약 6,126 단풍</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-green-300">약 21,929 단풍</td>
+                        </tr>
+                        <tr class="bg-gray-800 bg-opacity-30">
+                            <td class="border border-gray-500 px-2 py-2"><i class="fas fa-wand-sparkles text-blue-400"></i> 64제 메무</td>
+                            <td class="border border-gray-500 px-2 py-2">3,000</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-blue-300">약 10,680 단풍</td>
+                            <td class="border border-gray-500 px-2 py-2 font-semibold text-blue-300">약 40,142 단풍</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
+        
+        <!-- Sidebar -->
+        <div class="lg:col-span-1 space-y-6">
+            
+            <!-- 총 소모 단풍 -->
+            <div class="bg-gray-800 rounded-xl shadow-lg p-6 border-2 border-amber-500">
+                <h2 class="text-xl font-bold flex items-center gap-2 border-b-2 border-amber-500 pb-3 mb-4 text-white">
+                    <i class="fas fa-coins text-amber-400"></i> 총 소모 단풍
+                </h2>
+                <div id="total-cost" class="text-4xl font-bold text-amber-400 text-center py-4">
+                    0 단풍
+                </div>
+            </div>
+
+            <!-- 무기 상점 -->
+            <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold flex items-center gap-2 border-b-2 border-sky-400 pb-3 mb-4 text-white">
+                    <i class="fas fa-store text-sky-400"></i> 무기 상점
+                </h2>
+                <div class="space-y-3">
+                    <button id="buy-500" class="w-full p-4 text-base font-bold text-white bg-gradient-to-r from-yellow-300 to-yellow-400 rounded-lg hover:from-yellow-400 hover:to-yellow-500 transition duration-200 shadow-md">
+                        <i class="fas fa-seedling"></i> 35제 메무 (500 단풍)
+                    </button>
+                    <button id="buy-1500" class="w-full p-4 text-base font-bold text-white bg-gradient-to-r from-emerald-300 to-emerald-400 rounded-lg hover:from-emerald-400 hover:to-emerald-500 transition duration-200 shadow-md">
+                        <i class="fas fa-leaf"></i> 43제 메무 (1500 단풍)
+                    </button>
+                    <button id="buy-3000" class="w-full p-4 text-base font-bold text-white bg-gradient-to-r from-sky-300 to-sky-400 rounded-lg hover:from-sky-400 hover:to-sky-500 transition duration-200 shadow-md">
+                        <i class="fas fa-gem"></i> 64제 메무 (3000 단풍)
+                    </button>
+                    <button id="reset-sim" class="w-full p-4 text-base font-bold text-white bg-gradient-to-r from-rose-300 to-rose-400 rounded-lg hover:from-rose-400 hover:to-rose-500 transition duration-200 shadow-md mt-3">
+                        <i class="fas fa-rotate-right"></i> 초기화
+                    </button>
+                </div>
+            </div>
+
+            <!-- 강화 설정 -->
+            <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold flex items-center gap-2 border-b-2 border-purple-400 pb-3 mb-4 text-white">
+                    <i class="fas fa-gear text-purple-400"></i> 강화 설정
+                </h2>
+                <ul class="list-none p-0 space-y-3">
+                    <li class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                        <span class="font-medium text-gray-200">강화 비용</span>
+                        <span class="font-bold text-lg text-sky-400">100 단풍</span>
+                    </li>
+                    <li class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                        <span class="font-medium text-gray-200">성공 확률</span>
+                        <span class="font-bold text-lg text-emerald-400">70%</span>
+                    </li>
+                    <li class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                        <span class="font-medium text-gray-200">최대 시도</span>
+                        <span class="font-bold text-lg text-amber-400">7회</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Inventory and Log -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Inventory -->
+            <div class="bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2 border-b-2 border-sky-400 pb-3 mb-5 text-white">
+                    <i class="fas fa-bag-shopping text-sky-400"></i> 보유 무기 현황
+                </h2>
+                <div id="inventory-display" class="space-y-4">
+                    <p class="text-gray-400 text-center py-8">보유한 무기가 없습니다. 상점에서 구매해주세요.</p>
+                </div>
+            </div>
+
+            <!-- Log Area -->
+            <div class="bg-gray-800 rounded-xl shadow-lg p-6 flex flex-col">
+                <h2 class="text-2xl font-bold flex items-center gap-2 border-b-2 border-emerald-400 pb-3 mb-5 text-white">
+                    <i class="fas fa-scroll text-emerald-400"></i> 상세 로그
+                </h2>
+                <div id="log-container" class="flex-grow bg-gray-900 text-gray-100 p-5 rounded-xl overflow-y-auto h-96 min-h-[400px] font-mono text-sm leading-relaxed shadow-inner border-2 border-gray-700">
+                    <p class="log-system"><i class="fas fa-gamepad"></i> 시뮬레이션을 시작합니다.</p>
+                </div>
+            </div>
+            
+            <!-- AdSense 광고 (우측) -->
+            <div class="ad-container">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-1404130594250508"
+                     data-ad-slot="9876543210"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+        </div>
+    </main>
+
+    <!-- AdSense 광고 (하단) -->
+    <div class="ad-container max-w-7xl mx-auto px-4 pb-8">
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-client="ca-pub-1404130594250508"
+             data-ad-slot="1357924680"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+        <script>
+             (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-sm">© 2025 무기 강화 시뮬레이터 | Made by out外</p>
+            <p class="text-xs text-gray-400 mt-2">이 시뮬레이터는 실제 게임과 다를 수 있습니다.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- DOM 요소 ---
+        const buy500Btn = document.getElementById('buy-500');
+        const buy1500Btn = document.getElementById('buy-1500');
+        const buy3000Btn = document.getElementById('buy-3000');
+        const resetBtn = document.getElementById('reset-sim');
+        const logContainer = document.getElementById('log-container');
+        const totalCostEl = document.getElementById('total-cost');
+        const inventoryDisplay = document.getElementById('inventory-display');
+
+        // --- 시뮬레이션 상태 변수 ---
+        let totalMaple = 0;
+        let inventory = [];
+        let logBuffer = [];
+        let logTimeout = null;
+
+        // --- 시뮬레이션 상수 ---
+        const PROB_SUCCESS = 0.7;
+        const MAX_ATTEMPTS = 7;
+        const COST_ENHANCE = 100;
+        const COST_500_BUY = 500;
+        const COST_1500_BUY = 1500;
+        const COST_1500_UPGRADE = 1000;  // 500 -> 1500 업그레이드 비용
+        const COST_3000_BUY = 3000;
+        const COST_3000_UPGRADE = 1500;  // 1500 -> 3000 업그레이드 비용
+        
+        // --- 이벤트 리스너 ---
+        buy500Btn.addEventListener('click', () => buyWeapon(500));
+        buy1500Btn.addEventListener('click', () => buyWeapon(1500));
+        buy3000Btn.addEventListener('click', () => buyWeapon(3000));
+        resetBtn.addEventListener('click', resetSimulation);
+
+        // --- Helper 함수 ---
+        
+        /** 무기 타입별 이름 반환 */
+        function getWeaponName(type) {
+            if (type === 500) return '35제 메무';
+            if (type === 1500) return '43제 메무';
+            return '64제 메무';
+        }
+        
+        /** 무기 타입별 아이콘 반환 */
+        function getWeaponIcon(type) {
+            if (type === 500) return '<i class="fas fa-seedling"></i>';
+            if (type === 1500) return '<i class="fas fa-leaf"></i>';
+            return '<i class="fas fa-gem"></i>';
+        }
+        
+        /** 무기 타입별 로그 클래스 반환 */
+        function getWeaponLogClass(type) {
+            if (type === 500) return 'log-weapon-500';
+            if (type === 1500) return 'log-weapon-1500';
+            return 'log-weapon-3000';
+        }
+
+        // --- 핵심 함수 ---
+
+        /** 시뮬레이션 초기화 */
+        function resetSimulation() {
+            totalMaple = 0;
+            inventory = [];
+            logBuffer = [];
+            if(logTimeout) clearTimeout(logTimeout);
+            
+            logContainer.innerHTML = '<p class="log-system"><i class="fas fa-rotate-right"></i> 시뮬레이션이 초기화되었습니다.</p>';
+            updateCostDisplay();
+            renderInventory();
+        }
+        
+        /** 로그 버퍼 및 렌더링 */
+        function log(message, type = 'log-system') {
+            logBuffer.push({ message, type });
+            if (!logTimeout) {
+                logTimeout = setTimeout(renderLog, 0);
+            }
+        }
+
+        function renderLog() {
+            if (logBuffer.length === 0) {
+                logTimeout = null;
+                return;
+            }
+            let fragment = document.createDocumentFragment();
+            logBuffer.forEach(item => {
+                const p = document.createElement('p');
+                p.className = item.type;
+                p.innerHTML = item.message;  // textContent에서 innerHTML로 변경
+                fragment.appendChild(p);
+            });
+            logContainer.appendChild(fragment);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            logBuffer = [];
+            logTimeout = null;
+        }
+
+        /** 비용 추가 및 로그 */
+        function addMapleCost(amount, reason) {
+            totalMaple += amount;
+            log(`<i class="fas fa-coins"></i> [단풍 -${amount.toLocaleString()}] ${reason} (총 소모: ${totalMaple.toLocaleString()} 단풍)`, 'log-cost');
+            updateCostDisplay();
+        }
+
+        /** 총 비용 UI 업데이트 */
+        function updateCostDisplay() {
+            totalCostEl.textContent = `${totalMaple.toLocaleString()} 단풍`;
+        }
+
+        /** 무기 구매 */
+        function buyWeapon(type) {
+            let cost, weaponName;
+            if (type === 500) {
+                cost = COST_500_BUY;
+                weaponName = '35제 메무';
+            } else if (type === 1500) {
+                cost = COST_1500_BUY;
+                weaponName = '43제 메무';
+            } else {
+                cost = COST_3000_BUY;
+                weaponName = '64제 메무';
+            }
+            
+            const newWeapon = {
+                id: Date.now(),
+                type: type,
+                level: 0,
+                attempts: MAX_ATTEMPTS
+            };
+            inventory.push(newWeapon);
+            addMapleCost(cost, `${weaponName} 구매`);
+            log(`<i class="fas fa-check-circle"></i> [획득] ${getWeaponIcon(type)} ${weaponName} (0강 / 7회) 1개를 획득했습니다. (ID: ${newWeapon.id % 10000})`, getWeaponLogClass(type));
+            renderInventory();
+        }
+
+        /** 인벤토리 UI 렌더링 */
+        function renderInventory() {
+            if (inventory.length === 0) {
+                inventoryDisplay.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-8">보유한 무기가 없습니다. 상점에서 구매해주세요.</p>';
+                return;
+            }
+
+            inventoryDisplay.innerHTML = '';
+            inventory.forEach(weapon => {
+                const card = document.createElement('div');
+                let cardColor, textColor, upgradeCost, upgradeDisabled;
+                
+                if (weapon.type === 500) {
+                    cardColor = 'bg-gradient-to-br from-yellow-900 to-amber-900 border-yellow-500';
+                    textColor = 'text-yellow-300';
+                    upgradeCost = 1000;
+                    upgradeDisabled = '';
+                } else if (weapon.type === 1500) {
+                    cardColor = 'bg-gradient-to-br from-emerald-900 to-green-900 border-emerald-500';
+                    textColor = 'text-emerald-300';
+                    upgradeCost = 1500;
+                    upgradeDisabled = '';
+                } else {
+                    cardColor = 'bg-gradient-to-br from-sky-900 to-blue-900 border-sky-500';
+                    textColor = 'text-sky-300';
+                    upgradeDisabled = 'disabled hidden';
+                }
+                
+                card.className = `weapon-card p-5 rounded-xl shadow-md border-2 ${cardColor}`;
+                
+                const canEnhance = weapon.attempts > 0;
+                const enhanceDisabled = canEnhance ? '' : 'disabled';
+
+                card.innerHTML = `
+                    <h3 class="text-xl font-bold ${textColor} mb-3">
+                        ${getWeaponIcon(weapon.type)} ${getWeaponName(weapon.type)} #${weapon.id % 10000}
+                    </h3>
+                    <div class="flex justify-between my-3 text-base bg-gray-800 p-3 rounded-lg text-gray-200">
+                        <span><i class="fas fa-star text-amber-400"></i> 강화: <span class="font-bold text-lg">${weapon.level}강</span></span>
+                        <span><i class="fas fa-bullseye text-rose-400"></i> 남은 시도: <span class="font-bold text-lg">${weapon.attempts}회</span></span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <button class="enhance-btn w-full p-3 text-sm font-bold text-white bg-gradient-to-r from-amber-300 to-orange-300 rounded-lg hover:from-amber-400 hover:to-orange-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-md" data-id="${weapon.id}" ${enhanceDisabled}>
+                            <i class="fas fa-hammer"></i> 강화<br/>(100)
+                        </button>
+                        <button class="upgrade-btn w-full p-3 text-sm font-bold text-white bg-gradient-to-r from-purple-300 to-pink-300 rounded-lg hover:from-purple-400 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed shadow-md ${upgradeDisabled}" data-id="${weapon.id}" ${upgradeDisabled}>
+                            <i class="fas fa-arrow-up"></i> 업글<br/>(${upgradeCost})
+                        </button>
+                        <button class="discard-btn w-full p-3 text-sm font-bold text-white bg-gradient-to-r from-slate-400 to-slate-500 rounded-lg hover:from-slate-500 hover:to-slate-600 shadow-md" data-id="${weapon.id}">
+                            <i class="fas fa-trash"></i> 버리기
+                        </button>
+                    </div>
+                `;
+                
+                if (!canEnhance && weapon.attempts === 0) {
+                    card.querySelector('h3').innerHTML += " <span class='text-red-500 text-sm'>(시도 횟수 소진)</span>";
+                }
+
+                inventoryDisplay.appendChild(card);
+            });
+
+            document.querySelectorAll('.enhance-btn').forEach(btn => btn.addEventListener('click', () => enhanceWeapon(btn.dataset.id)));
+            document.querySelectorAll('.upgrade-btn').forEach(btn => btn.addEventListener('click', () => upgradeWeapon(btn.dataset.id)));
+            document.querySelectorAll('.discard-btn').forEach(btn => btn.addEventListener('click', () => discardWeapon(btn.dataset.id)));
+        }
+
+        /** 무기 강화 */
+        function enhanceWeapon(id) {
+            const weapon = inventory.find(w => w.id == id);
+            if (!weapon || weapon.attempts <= 0) return;
+
+            addMapleCost(COST_ENHANCE, `${getWeaponName(weapon.type)} (ID: ${weapon.id % 10000}) 강화 시도`);
+            weapon.attempts--;
+
+            if (Math.random() <= PROB_SUCCESS) {
+                weapon.level++;
+                log(`  <i class="fas fa-sparkles"></i> [${weapon.id % 10000}] <i class="fas fa-party-horn"></i> 성공! -> ${weapon.level}강 (남은 시도: ${weapon.attempts})`, 'log-success');
+            } else {
+                log(`  <i class="fas fa-heart-crack"></i> [${weapon.id % 10000}] <i class="fas fa-xmark"></i> 실패... (남은 시도: ${weapon.attempts})`, 'log-fail');
+            }
+            renderInventory();
+        }
+        
+        /** 무기 업그레이드 */
+        function upgradeWeapon(id) {
+            const weaponIndex = inventory.findIndex(w => w.id == id);
+            if (weaponIndex === -1) return;
+            
+            const oldWeapon = inventory[weaponIndex];
+            let newType, upgradeCost;
+            
+            if (oldWeapon.type === 500) {
+                newType = 1500;
+                upgradeCost = COST_1500_UPGRADE;
+            } else if (oldWeapon.type === 1500) {
+                newType = 3000;
+                upgradeCost = COST_3000_UPGRADE;
+            } else {
+                return; // 3000은 업그레이드 불가
+            }
+
+            const oldWeaponId = oldWeapon.id;
+            addMapleCost(upgradeCost, `${getWeaponName(oldWeapon.type)} (ID: ${oldWeaponId % 10000}) → ${getWeaponName(newType)} 업그레이드`);
+            
+            const newWeapon = {
+                id: Date.now(),
+                type: newType,
+                level: 0,
+                attempts: MAX_ATTEMPTS
+            };
+            
+            inventory[weaponIndex] = newWeapon;
+            
+            log(`<i class="fas fa-recycle"></i> [업그레이드] ${getWeaponIcon(oldWeapon.type)} ${getWeaponName(oldWeapon.type)} → ${getWeaponIcon(newType)} ${getWeaponName(newType)} (0강 / 7회)로 변경되었습니다. (ID: ${newWeapon.id % 10000})`, getWeaponLogClass(newType));
+            renderInventory();
+        }
+
+        /** 무기 버리기 */
+        function discardWeapon(id) {
+            const weaponIndex = inventory.findIndex(w => w.id == id);
+            if (weaponIndex === -1) return;
+            
+            const weapon = inventory[weaponIndex];
+            log(`<i class="fas fa-trash"></i> [버리기] ${getWeaponIcon(weapon.type)} ${getWeaponName(weapon.type)} (${weapon.level}강)을 버렸습니다. (ID: ${weapon.id % 10000})`, 'log-system');
+            
+            inventory.splice(weaponIndex, 1);
+            renderInventory();
+        }
+
+        // 초기화
+        resetSimulation();
+    </script>
+</body>
+</html>

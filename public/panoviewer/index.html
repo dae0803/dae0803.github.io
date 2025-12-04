@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HJ's Tech Portfolio</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RYLYY4BYT4"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-RYLYY4BYT4');
+    </script>
+    <link rel="stylesheet" href="assets/css/home.css">
+</head>
+<body>
+    <!-- 잠금 화면 -->
+    <div id="lock-screen">
+        <div class="lock-container">
+            <div class="icon">🔒</div>
+            <h2>Private Portfolio</h2>
+            <p>접속 권한이 필요합니다.</p>
+            <div class="input-group">
+                <input type="password" id="password-input" placeholder="Access Key">
+                <button id="btn-login">→</button>
+            </div>
+            <p id="error-msg" class="error"></p>
+        </div>
+    </div>
+
+    <!-- 메인 대시보드 (로그인 후 보임) -->
+    <div id="dashboard" style="display: none;">
+        <header>
+            <div class="logo">JUN's Tech Blog</div>
+            <nav>
+                <button id="btn-logout">Logout</button>
+            </nav>
+        </header>
+
+        <main>
+            <section class="intro">
+                <h1>은민 BIM/3D SCAN팀 기술블로그</h1>
+                <p>BIM/3D SCAN팀에서 진행하고있는 기술지원자료들 입니다. 문의 : 조형준 선임</p>
+            </section>
+
+            <section class="grid-container">
+                <!-- 카드 1: 여의도 63스퀘어 -->
+                <div class="card" onclick="openViewer('63sq')">
+                    <div class="card-image" style="background-color: #2c3e50;">
+                        <span>🏢</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>여의도 63스퀘어</h3>
+                        <p>파노라마 뷰어 및 마감 레벨 분석</p>
+                        <div class="tags">
+                            <span class="tag">Panorama</span>
+                            <span class="tag">Analysis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 카드 2: 춘천 프리미엄 빌리지 -->
+                <div class="card" onclick="openLink('projects/춘천 프리미엄빌리지/index.html')">
+                    <div class="card-image" style="background-color: #27ae60;">
+                        <span>🌲</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>춘천 프리미엄 빌리지</h3>
+                        <p>폴대 위치 선정을 위한 3D 스캔 데이터 시각화</p>
+                        <div class="tags">
+                            <span class="tag">3D Scan</span>
+                            <span class="tag">Visualization</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 카드 3: 송도 잭니클라우스 -->
+                <div class="card disabled">
+                    <div class="card-image" style="background-color: #7f8c8d;">
+                        <span>⛳</span>
+                    </div>
+                    <div class="card-content">
+                        <h3>송도 잭니클라우스</h3>
+                        <p>데이터 준비 중</p>
+                        <div class="tags">
+                            <span class="tag">Coming Soon</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="assets/js/common.js"></script>
+</body>
+</html>
