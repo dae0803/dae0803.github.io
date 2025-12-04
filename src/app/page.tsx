@@ -1,6 +1,41 @@
-import { ArrowRight, Calendar, Tag } from "lucide-react";
+import { Calendar, User, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { projects } from "@/lib/data";
+
+// Mock data for blog posts
+const posts = [
+  {
+    id: 1,
+    title: "3D 스캔 기술의 현장 적용 사례",
+    excerpt: "최신 3D 스캔 장비를 활용하여 건설 현장의 정밀 데이터를 취득하고 분석하는 과정에 대한 심층 리포트입니다.",
+    date: "2024-12-01",
+    author: "조형준",
+    category: "Technology"
+  },
+  {
+    id: 2,
+    title: "BIM 데이터와 파노라마 뷰어의 통합",
+    excerpt: "대용량 BIM 모델과 360도 파노라마 이미지를 웹에서 효율적으로 연동하여 시각화하는 기술적인 챌린지와 해결책을 공유합니다.",
+    date: "2024-11-20",
+    author: "조형준",
+    category: "Development"
+  },
+  {
+    id: 3,
+    title: "Next.js를 활용한 포트폴리오 사이트 구축기",
+    excerpt: "React 기반의 Next.js 프레임워크를 사용하여 빠르고 반응성 높은 포트폴리오 웹사이트를 개발한 경험을 나눕니다.",
+    date: "2024-11-10",
+    author: "조형준",
+    category: "Web Dev"
+  },
+  {
+    id: 4,
+    title: "드론 측량과 지상 라이다의 데이터 정합",
+    excerpt: "항공 측량 데이터와 지상 라이다 데이터를 정합하여 오차를 최소화하고 전체 현장의 디지털 트윈을 구축하는 방법.",
+    date: "2024-10-25",
+    author: "조형준",
+    category: "Field Work"
+  }
+];
 
 export default function Home() {
   return (
@@ -9,54 +44,46 @@ export default function Home() {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">JUN's Blog</h1>
         <p className="text-muted-foreground">
-          BIM/3DSCAN팀에서 진행한 프로젝트 공간입니다.
+          BIM/3DSCAN팀에서 진행한 프로젝트와 기술 이야기를 기록하는 공간입니다.
         </p>
       </div>
 
-      {/* Project Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {projects.map((project) => (
-          <Link
-            key={project.id}
-            href={`/projects/${project.id}`}
-            className="group block p-6 bg-secondary/30 border border-border rounded-xl hover:border-primary/50 hover:bg-secondary/50 transition-all duration-300"
+      {/* Blog Board */}
+      <div className="space-y-4">
+        {posts.map((post) => (
+          <div
+            key={post.id}
+            className="group block p-6 bg-background border border-border rounded-xl hover:border-primary/50 hover:shadow-md transition-all duration-300"
           >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                  {project.category}
-                </span>
-                <div className="flex items-center text-xs text-muted-foreground gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {project.date}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="px-2 py-0.5 rounded-full bg-secondary text-foreground font-medium">
+                    {post.category}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {post.date}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {post.author}
+                  </span>
                 </div>
-              </div>
-
-              <div className="space-y-2">
                 <h2 className="text-xl font-semibold group-hover:text-primary transition-colors">
-                  {project.title}
+                  {post.title}
                 </h2>
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {project.description}
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {post.excerpt}
                 </p>
               </div>
-
-              <div className="pt-4 flex items-center justify-between border-t border-border/50">
-                <div className="flex gap-2">
-                  {project.tags.slice(0, 2).map((tag) => (
-                    <span key={tag} className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-md flex items-center gap-1">
-                      <Tag className="w-3 h-3" />
-                      {tag}
-                    </span>
-                  ))}
-                  {project.tags.length > 2 && (
-                    <span className="text-xs text-muted-foreground px-2 py-1">+{project.tags.length - 2}</span>
-                  )}
-                </div>
-                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+              <div className="shrink-0">
+                <button className="text-sm font-medium text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
+                  Read More <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
     </div>
