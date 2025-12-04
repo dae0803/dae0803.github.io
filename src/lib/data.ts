@@ -17,7 +17,7 @@ export const projects: Project[] = [
         date: "2024-11-15",
         category: "Panorama / Analysis",
         tags: ["Panorama", "Analysis", "3D Scan"],
-        externalLink: "/panoviewer/viewer.html",
+        externalLink: "/panoviewer/63sq",
         content: `
 # 여의도 63스퀘어 프로젝트
 
@@ -34,7 +34,7 @@ export const projects: Project[] = [
 - **소프트웨어**: Custom Three.js Viewer, CloudCompare
 - **데이터**: 85개소 스캔 데이터 통합
 
-[뷰어 열기](/panoviewer/viewer.html) 버튼을 클릭하여 전체 화면으로 확인하세요.
+[뷰어 열기](/panoviewer/63sq) 버튼을 클릭하여 전체 화면으로 확인하세요.
     `,
     },
     {
@@ -44,7 +44,7 @@ export const projects: Project[] = [
         date: "2024-10-22",
         category: "3D Scan / Visualization",
         tags: ["3D Scan", "Visualization", "Planning"],
-        externalLink: "/panoviewer/projects/춘천 프리미엄빌리지/index.html",
+        externalLink: "/panoviewer/chuncheon/density/1",
         content: `
 # 춘천 프리미엄 빌리지 프로젝트
 
@@ -56,7 +56,7 @@ export const projects: Project[] = [
 - **시뮬레이션**: 가로등 및 CCTV 폴대 설치 위치 시뮬레이션.
 - **통합 뷰어**: 웹 기반의 3D 데이터 뷰어 제공.
 
-[통합 뷰어 열기](/panoviewer/projects/춘천 프리미엄빌리지/index.html)를 통해 상세 데이터를 확인하실 수 있습니다.
+[통합 뷰어 열기](/panoviewer/chuncheon/density/1)를 통해 상세 데이터를 확인하실 수 있습니다.
     `,
     },
     {
