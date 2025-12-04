@@ -40,16 +40,16 @@ export function Sidebar() {
                 <div className="flex flex-col h-full p-4">
                     {/* Logo / Brand */}
                     <div className={cn("flex items-center gap-3 mb-10 px-2", !isOpen && "justify-center")}>
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                            <span className="font-bold text-white">E</span>
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
+                            <span className="font-bold text-white">J</span>
                         </div>
                         {isOpen && (
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="font-bold text-lg tracking-tight"
+                                className="font-bold text-lg tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent"
                             >
-                                Eunmin Tech
+                                JUN's Blog
                             </motion.span>
                         )}
                     </div>
@@ -66,7 +66,7 @@ export function Sidebar() {
                                         "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden",
                                         isActive
                                             ? "bg-primary/10 text-primary"
-                                            : "text-muted-foreground hover:text-foreground hover:bg-white/5",
+                                            : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                                         !isOpen && "justify-center"
                                     )}
                                 >
@@ -90,8 +90,8 @@ export function Sidebar() {
                     {/* Footer / User Info */}
                     <div className={cn("mt-auto pt-4 border-t border-border", !isOpen && "hidden")}>
                         <div className="text-xs text-muted-foreground">
-                            <p>© 2025 Eunmin Tech</p>
-                            <p>Construction Support</p>
+                            <p className="font-medium text-foreground">© 2025 Hyungjun Cho</p>
+                            <p>BIM / 3D Scan / Development</p>
                         </div>
                     </div>
                 </div>

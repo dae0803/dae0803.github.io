@@ -7,9 +7,9 @@ export default function Home() {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Project Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">JUN's Blog</h1>
         <p className="text-muted-foreground">
-          Overview of technical support and design projects.
+          BIM/3DSCAN팀에서 진행한 프로젝트 공간입니다.
         </p>
       </div>
 
