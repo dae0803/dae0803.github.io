@@ -9,6 +9,10 @@ interface PanoViewerProps {
     initialPointId?: string;
 }
 
+const MARKER_VISIBLE_DISTANCE = 15000;
+const MARKER_SPHERE_RADIUS = 410;
+const MARKER_SIZE = 36;
+
 const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [currentPoint, setCurrentPoint] = useState<PanoPoint | null>(null);
@@ -110,6 +114,32 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
             }
         };
 
+        const markerCanvas = document.createElement('canvas');
+        markerCanvas.width = 96;
+        markerCanvas.height = 96;
+        const markerContext = markerCanvas.getContext('2d');
+
+        if (markerContext) {
+            markerContext.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+            markerContext.shadowColor = 'rgba(0, 0, 0, 0.45)';
+            markerContext.shadowBlur = 10;
+            markerContext.beginPath();
+            markerContext.arc(48, 48, 28, 0, Math.PI * 2);
+            markerContext.fillStyle = 'rgba(239, 68, 68, 0.92)';
+            markerContext.fill();
+            markerContext.shadowBlur = 0;
+            markerContext.lineWidth = 6;
+            markerContext.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+            markerContext.stroke();
+            markerContext.beginPath();
+            markerContext.arc(48, 48, 8, 0, Math.PI * 2);
+            markerContext.fillStyle = '#ffffff';
+            markerContext.fill();
+        }
+
+        const markerTexture = new THREE.CanvasTexture(markerCanvas);
+        markerTexture.colorSpace = THREE.SRGBColorSpace;
+
         const updateMarkers = (current: PanoPoint) => {
             clearMarkers();
 
@@ -121,18 +151,19 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
                 const dz = point.z - current.z;
                 const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-                if (distance === 0 || distance >= 8000) return;
+                if (distance === 0 || distance >= MARKER_VISIBLE_DISTANCE) return;
 
                 const markerMaterial = new THREE.SpriteMaterial({
-                    color: 0xffffff,
+                    map: markerTexture,
+                    transparent: true,
                     depthTest: false,
                     depthWrite: false,
                 });
                 const marker = new THREE.Sprite(markerMaterial);
                 const direction = new THREE.Vector3(dx, dz, -dy).normalize();
 
-                marker.position.copy(direction.multiplyScalar(400));
-                marker.scale.set(20, 20, 1);
+                marker.position.copy(direction.multiplyScalar(MARKER_SPHERE_RADIUS));
+                marker.scale.set(MARKER_SIZE, MARKER_SIZE, 1);
                 marker.userData = { point };
 
                 markersGroup.add(marker);
@@ -277,6 +308,7 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
             container.removeEventListener('wheel', onDocumentMouseWheel);
             clearMarkers();
             disposeSphere();
+            markerTexture.dispose();
             renderer.dispose();
             renderer.domElement.remove();
             sceneRef.current = null;
