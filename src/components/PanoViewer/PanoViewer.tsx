@@ -14,6 +14,7 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
     const [currentPoint, setCurrentPoint] = useState<PanoPoint | null>(null);
     const [loading, setLoading] = useState(true);
     const [progress, setProgress] = useState(0);
+    const [error, setError] = useState<string | null>(null);
 
     // Three.js refs
     const sceneRef = useRef<THREE.Scene | null>(null);
@@ -34,22 +35,36 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
     const thetaRef = useRef(0);
 
     useEffect(() => {
-        if (!containerRef.current) return;
+        const container = containerRef.current;
+        if (!container) return;
+
+        container.replaceChildren();
 
         // Initialize Scene
         const scene = new THREE.Scene();
         sceneRef.current = scene;
 
+        const getViewerSize = () => {
+            const rect = container.getBoundingClientRect();
+
+            return {
+                width: Math.max(1, Math.floor(rect.width)),
+                height: Math.max(1, Math.floor(rect.height)),
+            };
+        };
+
+        const size = getViewerSize();
+
         // Initialize Camera
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1100);
+        const camera = new THREE.PerspectiveCamera(75, size.width / size.height, 1, 1100);
 
         cameraRef.current = camera;
 
         // Initialize Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        containerRef.current.appendChild(renderer.domElement);
+        renderer.setSize(size.width, size.height);
+        container.appendChild(renderer.domElement);
         rendererRef.current = renderer;
 
         // Initialize Markers Group
@@ -57,59 +72,191 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
         scene.add(markersGroup);
         markersRef.current = markersGroup;
 
-        // Event Listeners
-        const onWindowResize = () => {
-            if (!cameraRef.current || !rendererRef.current) return;
-            cameraRef.current.aspect = window.innerWidth / window.innerHeight;
-            cameraRef.current.updateProjectionMatrix();
-            rendererRef.current.setSize(window.innerWidth, window.innerHeight);
+        const updateRendererSize = () => {
+            const nextSize = getViewerSize();
+            camera.aspect = nextSize.width / nextSize.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(nextSize.width, nextSize.height);
         };
 
-        const onPointerDown = (event: MouseEvent) => {
+        const update = () => {
+            latRef.current = Math.max(-85, Math.min(85, latRef.current));
+            phiRef.current = THREE.MathUtils.degToRad(90 - latRef.current);
+            thetaRef.current = THREE.MathUtils.degToRad(lonRef.current);
+
+            const target = new THREE.Vector3();
+            target.x = 500 * Math.sin(phiRef.current) * Math.cos(thetaRef.current);
+            target.y = 500 * Math.cos(phiRef.current);
+            target.z = 500 * Math.sin(phiRef.current) * Math.sin(thetaRef.current);
+
+            camera.lookAt(target);
+            renderer.render(scene, camera);
+        };
+
+        const disposeSphere = () => {
+            if (!sphereRef.current) return;
+
+            scene.remove(sphereRef.current);
+            (sphereRef.current.material as THREE.Material).dispose();
+            sphereRef.current.geometry.dispose();
+            sphereRef.current = null;
+        };
+
+        const clearMarkers = () => {
+            while (markersGroup.children.length > 0) {
+                const marker = markersGroup.children[0] as THREE.Sprite;
+                markersGroup.remove(marker);
+                marker.material.dispose();
+            }
+        };
+
+        const updateMarkers = (current: PanoPoint) => {
+            clearMarkers();
+
+            pointsData.forEach((point) => {
+                if (point === current) return;
+
+                const dx = point.x - current.x;
+                const dy = point.y - current.y;
+                const dz = point.z - current.z;
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                if (distance === 0 || distance >= 8000) return;
+
+                const markerMaterial = new THREE.SpriteMaterial({
+                    color: 0xffffff,
+                    depthTest: false,
+                    depthWrite: false,
+                });
+                const marker = new THREE.Sprite(markerMaterial);
+                const direction = new THREE.Vector3(dx, dz, -dy).normalize();
+
+                marker.position.copy(direction.multiplyScalar(400));
+                marker.scale.set(20, 20, 1);
+                marker.userData = { point };
+
+                markersGroup.add(marker);
+            });
+        };
+
+        const textureLoader = new THREE.TextureLoader();
+
+        const loadPanorama = (point: PanoPoint) => {
+            setLoading(true);
+            setProgress(0);
+            setError(null);
+            setCurrentPoint(point);
+
+            const basePath = '/panoviewer/projects/여의도 63스퀘어/현장 파노라마뷰/파노라마데이터/';
+            const imagePath = encodeURI(`${basePath}${point.image}`);
+
+            textureLoader.load(
+                imagePath,
+                (texture) => {
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    const geometry = new THREE.SphereGeometry(500, 60, 40);
+                    geometry.scale(-1, 1, 1);
+
+                    const material = new THREE.MeshBasicMaterial({ map: texture });
+
+                    disposeSphere();
+
+                    const sphere = new THREE.Mesh(geometry, material);
+                    if (point.rotationY) {
+                        sphere.rotation.y = point.rotationY;
+                    }
+
+                    scene.add(sphere);
+                    sphereRef.current = sphere;
+
+                    updateMarkers(point);
+                    setLoading(false);
+                },
+                (xhr) => {
+                    if (xhr.total > 0) {
+                        setProgress((xhr.loaded / xhr.total) * 100);
+                    }
+                },
+                () => {
+                    setError("파노라마 이미지를 불러오지 못했습니다.");
+                    setLoading(false);
+                }
+            );
+        };
+
+        const handleMarkerClick = () => {
+            raycasterRef.current.setFromCamera(mouseRef.current, camera);
+            const intersects = raycasterRef.current.intersectObjects(markersGroup.children);
+
+            if (intersects.length === 0) return;
+
+            const targetPoint = intersects[0].object.userData.point as PanoPoint | undefined;
+
+            if (targetPoint) {
+                loadPanorama(targetPoint);
+            }
+        };
+
+        const syncMousePosition = (event: PointerEvent) => {
+            const rect = container.getBoundingClientRect();
+            mouseRef.current.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseRef.current.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        };
+
+        const onPointerDown = (event: PointerEvent) => {
             isUserInteractingRef.current = true;
             onPointerDownPointerXRef.current = event.clientX;
             onPointerDownPointerYRef.current = event.clientY;
             onPointerDownLonRef.current = lonRef.current;
             onPointerDownLatRef.current = latRef.current;
+            container.setPointerCapture(event.pointerId);
+            syncMousePosition(event);
         };
 
-        const onPointerMove = (event: MouseEvent) => {
+        const onPointerMove = (event: PointerEvent) => {
             if (isUserInteractingRef.current) {
                 lonRef.current = (onPointerDownPointerXRef.current - event.clientX) * 0.1 + onPointerDownLonRef.current;
                 latRef.current = (event.clientY - onPointerDownPointerYRef.current) * 0.1 + onPointerDownLatRef.current;
             }
 
-            // Update mouse position for raycaster
-            mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            syncMousePosition(event);
         };
 
-        const onPointerUp = (event: MouseEvent) => {
+        const onPointerUp = (event: PointerEvent) => {
             isUserInteractingRef.current = false;
+            container.releasePointerCapture(event.pointerId);
+            syncMousePosition(event);
 
-            // Check for clicks on markers
             if (Math.abs(event.clientX - onPointerDownPointerXRef.current) < 5 &&
                 Math.abs(event.clientY - onPointerDownPointerYRef.current) < 5) {
                 handleMarkerClick();
             }
         };
 
-        const onDocumentMouseWheel = (event: WheelEvent) => {
-            if (!cameraRef.current) return;
-            const fov = cameraRef.current.fov + event.deltaY * 0.05;
-            cameraRef.current.fov = THREE.MathUtils.clamp(fov, 10, 75);
-            cameraRef.current.updateProjectionMatrix();
+        const onPointerLeave = () => {
+            isUserInteractingRef.current = false;
         };
 
-        window.addEventListener('resize', onWindowResize);
-        containerRef.current.addEventListener('mousedown', onPointerDown);
-        containerRef.current.addEventListener('mousemove', onPointerMove);
-        containerRef.current.addEventListener('mouseup', onPointerUp);
-        containerRef.current.addEventListener('wheel', onDocumentMouseWheel);
+        const onDocumentMouseWheel = (event: WheelEvent) => {
+            const fov = camera.fov + event.deltaY * 0.05;
+            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+            camera.updateProjectionMatrix();
+        };
+
+        window.addEventListener('resize', updateRendererSize);
+        container.addEventListener('pointerdown', onPointerDown);
+        container.addEventListener('pointermove', onPointerMove);
+        container.addEventListener('pointerup', onPointerUp);
+        container.addEventListener('pointerleave', onPointerLeave);
+        container.addEventListener('wheel', onDocumentMouseWheel);
+
+        const resizeObserver = new ResizeObserver(updateRendererSize);
+        resizeObserver.observe(container);
 
         // Animation Loop
+        let animationFrameId = 0;
         const animate = () => {
-            requestAnimationFrame(animate);
+            animationFrameId = requestAnimationFrame(animate);
             update();
             TWEEN.update();
         };
@@ -120,172 +267,24 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
         loadPanorama(startPoint);
 
         return () => {
-            window.removeEventListener('resize', onWindowResize);
-            if (containerRef.current) {
-                containerRef.current.removeEventListener('mousedown', onPointerDown);
-                containerRef.current.removeEventListener('mousemove', onPointerMove);
-                containerRef.current.removeEventListener('mouseup', onPointerUp);
-                containerRef.current.removeEventListener('wheel', onDocumentMouseWheel);
-                if (rendererRef.current) {
-                    containerRef.current.removeChild(rendererRef.current.domElement);
-                }
-            }
-            rendererRef.current?.dispose();
+            cancelAnimationFrame(animationFrameId);
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateRendererSize);
+            container.removeEventListener('pointerdown', onPointerDown);
+            container.removeEventListener('pointermove', onPointerMove);
+            container.removeEventListener('pointerup', onPointerUp);
+            container.removeEventListener('pointerleave', onPointerLeave);
+            container.removeEventListener('wheel', onDocumentMouseWheel);
+            clearMarkers();
+            disposeSphere();
+            renderer.dispose();
+            renderer.domElement.remove();
+            sceneRef.current = null;
+            cameraRef.current = null;
+            rendererRef.current = null;
+            markersRef.current = null;
         };
-    }, []);
-
-    const update = () => {
-        if (!cameraRef.current || !rendererRef.current || !sceneRef.current) return;
-
-        latRef.current = Math.max(-85, Math.min(85, latRef.current));
-        phiRef.current = THREE.MathUtils.degToRad(90 - latRef.current);
-        thetaRef.current = THREE.MathUtils.degToRad(lonRef.current);
-
-        const target = new THREE.Vector3();
-        target.x = 500 * Math.sin(phiRef.current) * Math.cos(thetaRef.current);
-        target.y = 500 * Math.cos(phiRef.current);
-        target.z = 500 * Math.sin(phiRef.current) * Math.sin(thetaRef.current);
-
-        cameraRef.current.lookAt(target);
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
-    };
-
-    const loadPanorama = (point: PanoPoint) => {
-        if (!sceneRef.current) return;
-
-        setLoading(true);
-        setCurrentPoint(point);
-
-        const textureLoader = new THREE.TextureLoader();
-        // The images are located in a deep subdirectory with Korean names.
-        // Path: public/panoviewer/projects/여의도 63스퀘어/현장 파노라마뷰/파노라마데이터/
-        // We need to encode the URI components to ensure they load correctly.
-        const basePath = '/panoviewer/projects/여의도 63스퀘어/현장 파노라마뷰/파노라마데이터/';
-        const imagePath = `${basePath}${point.image}`;
-
-        textureLoader.load(
-            imagePath,
-            (texture) => {
-                texture.colorSpace = THREE.SRGBColorSpace;
-                const geometry = new THREE.SphereGeometry(500, 60, 40);
-                // invert the geometry on the x-axis so that all of the faces point inward
-                geometry.scale(-1, 1, 1);
-
-                const material = new THREE.MeshBasicMaterial({ map: texture });
-
-                if (sphereRef.current) {
-                    sceneRef.current?.remove(sphereRef.current);
-                    (sphereRef.current.material as THREE.Material).dispose();
-                    (sphereRef.current.geometry as THREE.BufferGeometry).dispose();
-                }
-
-                const sphere = new THREE.Mesh(geometry, material);
-                if (point.rotationY) {
-                    sphere.rotation.y = point.rotationY;
-                }
-                sceneRef.current?.add(sphere);
-                sphereRef.current = sphere;
-
-                updateMarkers(point);
-                setLoading(false);
-            },
-            (xhr) => {
-                setProgress((xhr.loaded / xhr.total) * 100);
-            },
-            (error) => {
-                console.error('An error happened loading panorama:', error);
-                setLoading(false);
-            }
-        );
-    };
-
-    const updateMarkers = (current: PanoPoint) => {
-        if (!markersRef.current || !sceneRef.current) return;
-
-        // Clear existing markers
-        while (markersRef.current.children.length > 0) {
-            markersRef.current.remove(markersRef.current.children[0]);
-        }
-
-        // Add new markers
-        pointsData.forEach(point => {
-            if (point === current) return;
-
-            const distance = Math.sqrt(
-                Math.pow(point.x - current.x, 2) +
-                Math.pow(point.y - current.y, 2) +
-                Math.pow(point.z - current.z, 2)
-            );
-
-            // Only show markers within a certain distance (e.g., 5000 units)
-            // Adjust this threshold as needed based on the scale of coordinates
-            if (distance < 8000) {
-                const dx = point.x - current.x;
-                const dy = point.y - current.y;
-                const dz = point.z - current.z;
-
-                // Convert to spherical coordinates for placement on the sphere
-                // This logic might need adjustment based on the coordinate system used in the original data
-                // The original viewer.js likely had logic for this.
-                // Let's try a simple projection first.
-
-                // Normalize direction
-                const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                const ndx = dx / len;
-                const ndy = dy / len;
-                const ndz = dz / len;
-
-                // Position marker on the sphere (radius 450 to be slightly inside)
-                // Note: The coordinate system of the data (x, y, z) might not match Three.js (x, y, z) directly.
-                // Usually Y is up in Three.js.
-                // If the data is from a scanner, Z might be up.
-                // Let's assume standard mapping first, but we might need to swap Y and Z.
-                // Looking at data: y values are large negative/positive, z is small. 
-                // This suggests Y is likely the horizontal plane along with X, and Z is height?
-                // Or maybe it's X and Y are ground plane.
-                // Let's check viewer.js logic if possible.
-
-                // For now, I'll use a placeholder logic.
-                // I'll create a simple sprite.
-
-                const spriteMaterial = new THREE.SpriteMaterial({ color: 0xffffff });
-                const sprite = new THREE.Sprite(spriteMaterial);
-
-                // We need to rotate the vector based on the current sphere's rotation?
-                // Actually, if the sphere is rotated, the world coordinates are relative to the camera?
-                // No, the sphere rotates to align with the real world.
-                // So the markers should be placed in the "world" space relative to the current point.
-
-                // Simplified: just place them based on relative direction
-                // We need to account for the rotationY of the current panorama
-
-                const vec = new THREE.Vector3(dx, dz, -dy).normalize(); // Swapping axes based on guess
-                // Wait, let's stick to a simpler guess or check viewer.js.
-                // viewer.js would be best.
-
-                sprite.position.copy(vec.multiplyScalar(400));
-                sprite.scale.set(20, 20, 1);
-                sprite.userData = { point };
-
-                markersRef.current?.add(sprite);
-            }
-        });
-    };
-
-    const handleMarkerClick = () => {
-        if (!raycasterRef.current || !cameraRef.current || !markersRef.current) return;
-
-        raycasterRef.current.setFromCamera(mouseRef.current, cameraRef.current);
-        const intersects = raycasterRef.current.intersectObjects(markersRef.current.children);
-
-        if (intersects.length > 0) {
-            const targetPoint = intersects[0].object.userData.point as PanoPoint;
-            if (targetPoint) {
-                // Transition effect
-                loadPanorama(targetPoint);
-            }
-        }
-    };
+    }, [initialPointId]);
 
     return (
         <div className="relative w-full h-[calc(100vh-4rem)] bg-black rounded-lg overflow-hidden border border-border shadow-lg">
@@ -302,6 +301,17 @@ const PanoViewer: React.FC<PanoViewerProps> = ({ initialPointId }) => {
                             />
                         </div>
                         <div className="text-sm text-muted-foreground">{Math.round(progress)}%</div>
+                    </div>
+                </div>
+            )}
+
+            {error && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/85 text-foreground z-50 backdrop-blur-sm">
+                    <div className="max-w-sm text-center space-y-2 px-6">
+                        <div className="text-lg font-semibold">{error}</div>
+                        <p className="text-sm text-muted-foreground">
+                            이미지 경로나 파일명을 확인한 뒤 다시 시도해주세요.
+                        </p>
                     </div>
                 </div>
             )}

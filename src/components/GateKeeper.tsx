@@ -1,37 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, Unlock } from "lucide-react";
 
 const ACCESS_KEY = "emtech2025"; // Simple hardcoded key
+const ACCESS_STORAGE_KEY = "site_access_key";
+const ACCESS_CHANGE_EVENT = "site-access-key-change";
+
+function subscribeAccessKey(callback: () => void) {
+    if (typeof window === "undefined") return () => undefined;
+
+    window.addEventListener("storage", callback);
+    window.addEventListener(ACCESS_CHANGE_EVENT, callback);
+
+    return () => {
+        window.removeEventListener("storage", callback);
+        window.removeEventListener(ACCESS_CHANGE_EVENT, callback);
+    };
+}
+
+function getAccessSnapshot() {
+    if (typeof window === "undefined") return "";
+
+    return localStorage.getItem(ACCESS_STORAGE_KEY) ?? "";
+}
 
 export function GateKeeper({ children }: { children: React.ReactNode }) {
-    const [isUnlocked, setIsUnlocked] = useState(false);
+    const accessKey = useSyncExternalStore(subscribeAccessKey, getAccessSnapshot, () => "");
     const [inputKey, setInputKey] = useState("");
     const [error, setError] = useState(false);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const storedKey = localStorage.getItem("site_access_key");
-        if (storedKey === ACCESS_KEY) {
-            setIsUnlocked(true);
-        }
-        setLoading(false);
-    }, []);
+    const isUnlocked = accessKey === ACCESS_KEY;
 
     const handleUnlock = (e: React.FormEvent) => {
         e.preventDefault();
         if (inputKey === ACCESS_KEY) {
-            localStorage.setItem("site_access_key", inputKey);
-            setIsUnlocked(true);
+            localStorage.setItem(ACCESS_STORAGE_KEY, inputKey);
+            window.dispatchEvent(new Event(ACCESS_CHANGE_EVENT));
         } else {
             setError(true);
             setTimeout(() => setError(false), 1000);
         }
     };
-
-    if (loading) return null; // Or a loading spinner
 
     return (
         <>

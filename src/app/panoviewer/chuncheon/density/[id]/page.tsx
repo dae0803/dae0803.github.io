@@ -10,11 +10,13 @@ export async function generateStaticParams() {
 }
 
 interface PageProps {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
-export default function DensityMapPage({ params }: PageProps) {
-    return <DensityPageClient id={params.id} />;
+export default async function DensityMapPage({ params }: PageProps) {
+    const { id } = await params;
+
+    return <DensityPageClient id={id} />;
 }

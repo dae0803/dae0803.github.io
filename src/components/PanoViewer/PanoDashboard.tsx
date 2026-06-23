@@ -1,27 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 
+const PANO_AUTH_KEY = 'pano_auth';
+const PANO_AUTH_CHANGE_EVENT = 'pano-auth-change';
+
+function subscribePanoAuth(callback: () => void) {
+    if (typeof window === 'undefined') return () => undefined;
+
+    window.addEventListener('storage', callback);
+    window.addEventListener(PANO_AUTH_CHANGE_EVENT, callback);
+
+    return () => {
+        window.removeEventListener('storage', callback);
+        window.removeEventListener(PANO_AUTH_CHANGE_EVENT, callback);
+    };
+}
+
+function getPanoAuthSnapshot() {
+    if (typeof window === 'undefined') return false;
+
+    return sessionStorage.getItem(PANO_AUTH_KEY) === 'true';
+}
+
 const PanoDashboard: React.FC = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const isAuthenticated = useSyncExternalStore(subscribePanoAuth, getPanoAuthSnapshot, () => false);
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const router = useRouter();
-
-    useEffect(() => {
-        const auth = sessionStorage.getItem('pano_auth');
-        if (auth === 'true') {
-            setIsAuthenticated(true);
-        }
-    }, []);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === 'eunmin') {
-            sessionStorage.setItem('pano_auth', 'true');
-            setIsAuthenticated(true);
+            sessionStorage.setItem(PANO_AUTH_KEY, 'true');
+            window.dispatchEvent(new Event(PANO_AUTH_CHANGE_EVENT));
             setError('');
         } else {
             setError('Incorrect password');
@@ -29,8 +41,8 @@ const PanoDashboard: React.FC = () => {
     };
 
     const handleLogout = () => {
-        sessionStorage.removeItem('pano_auth');
-        setIsAuthenticated(false);
+        sessionStorage.removeItem(PANO_AUTH_KEY);
+        window.dispatchEvent(new Event(PANO_AUTH_CHANGE_EVENT));
     };
 
     if (!isAuthenticated) {
